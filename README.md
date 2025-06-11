@@ -77,8 +77,18 @@ homelab/
 ├── scripts/
 │   └── provision-server.sh     # Server setup script
 ├── terraform/                  # Infrastructure as Code
-│   ├── main.tf                # Service definitions
-│   └── variables.tf           # Configuration variables
+│   ├── providers.tf           # Terraform and provider setup
+│   ├── variables.tf           # Global configuration
+│   ├── main.tf               # Global resources and orchestration
+│   ├── outputs.tf            # Deployment results
+│   ├── system/               # Infrastructure layer
+│   │   ├── network.tf        # mDNS aliases, container networks
+│   │   └── caddy.tf          # Reverse proxy configuration
+│   └── services/             # Application layer
+│       ├── jellyfin.tf       # Media server
+│       ├── homeassistant.tf  # Home automation hub
+│       ├── jellyseerr.tf     # Media request management
+│       └── minecraft.tf      # Game server
 ├── docs/                      # Additional documentation
 ├── .gitignore                 # Git ignore rules
 └── README.md                  # This file
@@ -97,8 +107,9 @@ homelab-rollback <number>      # Rollback to snapshot
 
 ### Service Management
 ```bash
-# Add a new service: edit terraform/main.tf services map
-# Remove a service: set enabled = false in services map
+# Add a new service: create new .tf file in services/
+# Remove a service: set enabled = false in variables.tf
+# Modify system infrastructure: edit files in system/
 terraform plan && terraform apply
 ```
 
