@@ -1,8 +1,18 @@
 terraform {
-  required_providers {
-  }
-}
+  required_version = ">= 1.0"
 
-provider "podman" {
-  host = "ssh://richard@192.168.69.1/run/user/1000/podman/podman.sock"
+  required_providers {
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+    podman = {
+      source  = "project0/podman"
+      version = "~> 0.1"
+    }
+  }
 }
