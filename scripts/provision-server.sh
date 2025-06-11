@@ -8,6 +8,9 @@ set -e  # Exit on any error
 SERVER_USER="richard"
 HOMELAB_DIR="/opt/homelab"
 
+PYTHON_VENV_DIR="/opt/venv"
+PYTHON_VENV_PATH="$PYTHON_VENV_DIR/venv_mdns_publisher"
+
 echo "🚀 Provisioning Ubuntu Server (host-level setup only)..."
 echo "User: $SERVER_USER"
 echo "Homelab Directory: $HOMELAB_DIR"
@@ -19,6 +22,20 @@ if [ "$USER" != "$SERVER_USER" ]; then
     echo "Current user: $USER"
     exit 1
 fi
+
+# Configure passwordless sudo for the user 'richard'
+SUDOERS_FILE_PATH="/etc/sudoers.d/$SERVER_USER-nopasswd"
+echo "Configuring passwordless sudo for user $SERVER_USER..."
+
+# Create the sudoers file.
+# Using tee with sudo to write to a root-owned directory.
+# The > /dev/null is to prevent tee from outputting the content to stdout.
+echo "$SERVER_USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "$SUDOERS_FILE_PATH" > /dev/null
+
+# Set the correct permissions for the sudoers file.
+# It should be readable by root and not writable by others.
+sudo chmod 0440 "$SUDOERS_FILE_PATH"
+echo "Passwordless sudo configured for $SERVER_USER."
 
 # Basic system updates
 echo "📦 Updating system packages..."
@@ -94,10 +111,24 @@ sudo apt install -y avahi-daemon avahi-utils
 sudo systemctl enable avahi-daemon
 sudo systemctl start avahi-daemon
 
-# Install python3 and mdns-publisher package
-echo "🐍 Installing Python3 and needed packages..."
-sudo apt install -y python3 python3-pip
-pip3 install mdns-publisher
+# Install python3, venv, build dependencies, and mdns-publisher package
+echo "🐍 Installing Python3, venv, build dependencies, and setting up mdns-publisher in a virtual environment..."
+sudo apt install -y python3 python3-pip python3-venv pkg-config libdbus-1-dev build-essential python3-dev libglib2.0-dev
+
+# Create the virtual environment for Python
+echo "🐍 Creating virtual environment at $PYTHON_VENV_PATH..."
+sudo mkdir -p "$PYTHON_VENV_DIR"
+
+if [ -d "$PYTHON_VENV_PATH" ]; then
+    echo "🐍 Python virtual environment already exists at $PYTHON_VENV_PATH..."
+    echo "Skipping creation..."
+else
+    sudo python3 -m venv "$PYTHON_VENV_PATH"
+fi
+
+# Install mdns-publisher into the new virtual environment
+echo "🐍 Installing mdns-publisher package into $PYTHON_VENV_PATH"
+sudo "$PYTHON_VENV_PATH/bin/pip" install --upgrade mdns-publisher
 
 # Basic firewall
 echo "🔥 Configuring basic firewall..."
