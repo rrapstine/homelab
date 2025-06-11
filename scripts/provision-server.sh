@@ -94,6 +94,11 @@ sudo apt install -y avahi-daemon avahi-utils
 sudo systemctl enable avahi-daemon
 sudo systemctl start avahi-daemon
 
+# Install python3 and mdns-publisher package
+echo "🐍 Installing Python3 and needed packages..."
+sudo apt install -y python3 python3-pip
+pip3 install mdns-publisher
+
 # Basic firewall
 echo "🔥 Configuring basic firewall..."
 sudo ufw --force enable
