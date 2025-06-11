@@ -1,9 +1,5 @@
 terraform {
   required_providers {
-    podman = {
-      source  = "kreuzwerker/podman"
-      version = "~> 3.0"
-    }
   }
 }
 
