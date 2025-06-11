@@ -5,8 +5,8 @@
 # Generate mDNS aliases configuration file
 resource "local_file" "mdns_aliases_config" {
   content = templatefile("${path.module}/../templates/mdns-aliases.conf.tftpl", {
-    services        = var.services
-    server_hostname = var.server_hostname
+    services        = var.system_services
+    server_hostname = var.system_server_hostname
   })
   filename = "${path.module}/../generated/mdns-aliases"
 }
@@ -15,9 +15,9 @@ resource "local_file" "mdns_aliases_config" {
 resource "null_resource" "deploy_mdns_script" {
   connection {
     type        = "ssh"
-    user        = var.ssh_user
-    private_key = file(var.ssh_private_key_path)
-    host        = var.server_ip
+    user        = var.system_ssh_user
+    private_key = file(var.system_ssh_private_key_path)
+    host        = var.system_server_ip
   }
 
   provisioner "file" {
@@ -42,9 +42,9 @@ resource "null_resource" "deploy_mdns_aliases_config" {
 
   connection {
     type        = "ssh"
-    user        = var.ssh_user
-    private_key = file(var.ssh_private_key_path)
-    host        = var.server_ip
+    user        = var.system_ssh_user
+    private_key = file(var.system_ssh_private_key_path)
+    host        = var.system_server_ip
   }
 
   provisioner "file" {
@@ -62,7 +62,7 @@ resource "null_resource" "deploy_mdns_aliases_config" {
 # Generate systemd service file from template
 resource "local_file" "mdns_service" {
   content = templatefile("${path.module}/../templates/mdns-publisher.service.tftpl", {
-    user = var.ssh_user
+    user = var.system_ssh_user
   })
   filename = "${path.module}/../generated/mdns-publisher.service"
 }
@@ -80,9 +80,9 @@ resource "null_resource" "deploy_mdns_service" {
 
   connection {
     type        = "ssh"
-    user        = var.ssh_user
-    private_key = file(var.ssh_private_key_path)
-    host        = var.server_ip
+    user        = var.system_ssh_user
+    private_key = file(var.system_ssh_private_key_path)
+    host        = var.system_server_ip
   }
 
   provisioner "file" {
