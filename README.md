@@ -78,7 +78,8 @@ homelab/
 │   └── provision-server.sh     # Server setup script
 ├── terraform/                  # Infrastructure as Code
 │   ├── providers.tf           # Terraform and provider setup
-│   ├── variables.tf           # Global configuration
+│   ├── variables.tf           # Variable definitions (schema only)
+│   ├── terraform.tfvars       # Actual variable values for deployment
 │   ├── main.tf               # Global resources and orchestration
 │   ├── outputs.tf            # Deployment results
 │   ├── system/               # Infrastructure layer
