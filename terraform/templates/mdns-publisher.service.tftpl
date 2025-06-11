@@ -3,8 +3,10 @@ Description=Avahi/mDNS CNAME publisher
 After=network.target avahi-daemon.service
 
 [Service]
+User=${user}
 Type=simple
-ExecStart=/usr/local/bin/publish-mdns-aliases.py
+WorkingDirectory=/home/${user}
+ExecStart=/home/${user}/scripts/publish-mdns-aliases.py
 Restart=on-failure
 RestartSec=5
 PrivateTmp=true

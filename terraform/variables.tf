@@ -2,13 +2,22 @@
 variable "server_hostname" {
   description = "The hostname of the homelab"
   type        = string
-  default     = "legends"
 }
 
 variable "server_ip" {
   description = "The IP address of the homelab"
   type        = string
-  default     = "192.168.69.1"
+}
+
+# SSH configuration
+variable "ssh_user" {
+  description = "The username for the ssh client"
+  type        = string
+}
+
+variable "ssh_private_key_path" {
+  description = "The path to SSH private key"
+  type        = string
 }
 
 # Generic service configuration
