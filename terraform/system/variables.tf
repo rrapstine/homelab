@@ -19,16 +19,6 @@ variable "system_ssh_private_key_path" {
   type        = string
 }
 
-variable "system_podman_user_uid" {
-  description = "The UID of the podman user on the server."
-  type        = string
-}
-
-variable "system_homelab_dir" {
-  description = "The path to the homelab directory on the server."
-  type        = string
-}
-
 variable "system_services" {
   description = "Map of services for mDNS alias generation and other system tasks."
   type = map(object({
