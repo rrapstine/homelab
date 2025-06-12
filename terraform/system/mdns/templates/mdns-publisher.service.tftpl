@@ -1,0 +1,16 @@
+[Unit]
+Description=Avahi/mDNS CNAME publisher
+After=network.target avahi-daemon.service
+
+[Service]
+User=${user}
+Type=simple
+WorkingDirectory=/home/${user}
+ExecStart=/home/${user}/scripts/publish-mdns-aliases.py
+Restart=on-failure
+RestartSec=5
+PrivateTmp=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target

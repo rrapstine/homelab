@@ -1,18 +1,32 @@
-###############################################
-# mDNS Aliasing Configuration
-###############################################
+# This file manages the host-based mDNS publisher components
+# by deploying them to the target server via SSH.
+
+locals {
+  local_generated_dir = "${path.module}/mdns/.generated/"
+}
+
+# Ensure that the .generated directory exists locally
+resource "null_resource" "ensure_local_generated_dir" {
+  provisioner "local-exec" {
+    command = "mkdir -p ${local.local_generated_dir}"
+  }
+}
 
 # Generate mDNS aliases configuration file
 resource "local_file" "mdns_aliases_config" {
-  content = templatefile("${path.module}/../templates/mdns-aliases.conf.tftpl", {
+  content = templatefile("${path.module}/mdns/templates/mdns-aliases.conf.tftpl", {
     services        = var.system_services
     server_hostname = var.system_server_hostname
   })
-  filename = "${path.module}/../generated/mdns-aliases"
+  filename = "${path.module}/mdns/.generated/mdns-aliases"
 }
 
 # Copy the Python script to the server
 resource "null_resource" "deploy_mdns_script" {
+  triggers = {
+    script_content_hash = filemd5("${path.module}/scripts/publish-mdns-aliases.py")
+  }
+
   connection {
     type        = "ssh"
     user        = var.system_ssh_user
@@ -21,15 +35,15 @@ resource "null_resource" "deploy_mdns_script" {
   }
 
   provisioner "file" {
-    source      = "${path.module}/../../scripts/publish-mdns-aliases.py"
+    source      = "${path.module}/mdns/scripts/publish-mdns-aliases.py"
     destination = "/tmp/publish-mdns-aliases.py"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "mkdir -p /home/richard/scripts",
-      "mv /tmp/publish-mdns-aliases.py /home/richard/scripts/publish-mdns-aliases.py",
-      "chmod +x /home/richard/scripts/publish-mdns-aliases.py"
+      "mkdir -p /home/${var.system_ssh_user}/scripts",
+      "mv /tmp/publish-mdns-aliases.py /home/${var.system_ssh_user}/scripts/publish-mdns-aliases.py",
+      "chmod +x /home/${var.system_ssh_user}/scripts/publish-mdns-aliases.py"
     ]
   }
 }
@@ -37,7 +51,7 @@ resource "null_resource" "deploy_mdns_script" {
 # Copy the mDNS aliases configuration to the server
 resource "null_resource" "deploy_mdns_aliases_config" {
   triggers = {
-    config_hash = local_file.mdns_aliases_config.content_md5
+    mdns_aliases_config_hash = local_file.mdns_aliases_config.content_md5
   }
 
   connection {
@@ -49,22 +63,22 @@ resource "null_resource" "deploy_mdns_aliases_config" {
 
   provisioner "file" {
     source      = local_file.mdns_aliases_config.filename
-    destination = "/home/richard/.mdns-aliases"
+    destination = "/home/${var.system_ssh_user}/.mdns-aliases"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "chmod 644 /home/richard/.mdns-aliases"
+      "chmod 644 /home/${var.system_ssh_user}/.mdns-aliases"
     ]
   }
 }
 
 # Generate systemd service file from template
 resource "local_file" "mdns_service" {
-  content = templatefile("${path.module}/../templates/mdns-publisher.service.tftpl", {
+  content = templatefile("${path.module}/mdns/templates/mdns-publisher.service.tftpl", {
     user = var.system_ssh_user
   })
-  filename = "${path.module}/../generated/mdns-publisher.service"
+  filename = "${path.module}/mdns/.generated/mdns-publisher.service"
 }
 
 # Deploy systemd service for mDNS publisher
