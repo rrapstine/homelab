@@ -4,6 +4,6 @@
 
 %{ for name, service in services ~}
 %{ if service.enabled ~}
-${name}.${server_hostname}.local ${name}
+${name}.${server_hostname}.local
 %{ endif ~}
 %{ endfor ~}
