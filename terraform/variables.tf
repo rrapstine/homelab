@@ -47,18 +47,18 @@ variable "container_network_name" {
 
 # Caddy configuration
 variable "caddy_config_host_path" {
-  description = "The full path on the host system where Terraform will generate the Caddyfile"
+  description = "Full path on the host where the generated Caddyfile will be stored."
   type        = string
 }
 
-variable "caddy_http_port" {
-  description = "The port Caddy will use for HTTP traffic"
+variable "caddy_host_http_port" {
+  description = "The HTTP port Caddy will listen on on the host."
   type        = number
   default     = 80
 }
 
-variable "caddy_https_port" {
-  description = "The port Caddy will use for HTTPS traffic"
+variable "caddy_host_https_port" {
+  description = "The HTTPS port Caddy will listen on on the host."
   type        = number
   default     = 443
 }
