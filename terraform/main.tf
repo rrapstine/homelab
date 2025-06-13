@@ -1,5 +1,5 @@
 resource "docker_network" "homelab_services_network" {
-  name = var.homelab_network_name
+  name = var.container_network_name
 }
 
 locals {
@@ -22,8 +22,7 @@ module "mdns_publisher" {
 }
 
 module "caddy" {
-  # Conditionally create Caddy if 'caddy' is enabled in the services map
-  count = lookup(var.services, "caddy", { enabled = false }).enabled ? 1 : 0
+  count = (can(var.services.caddy.enabled) && var.services.caddy.enabled) ? 1 : 0
 
   source = "./system/caddy"
 
