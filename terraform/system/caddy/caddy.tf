@@ -57,7 +57,7 @@ resource "docker_container" "caddy" {
     container_path = "/data"
   }
   volumes {
-    host_path      = null_resource.ensure_caddy_config_on_server.triggers.caddyfile_content
+    host_path      = var.caddy_config_path_host
     container_path = "/etc/caddy/Caddyfile"
     read_only      = true
   }
