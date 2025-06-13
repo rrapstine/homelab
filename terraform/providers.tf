@@ -18,5 +18,5 @@ terraform {
 }
 
 provider "docker" {
-  host = "unix:///run/podman/podman.sock"
+  host = "ssh://${var.ssh_user}@${var.server_ip}"
 }

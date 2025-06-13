@@ -7,7 +7,7 @@ resource "docker_image" "caddy" {
   keep_locally = true
 }
 
-resource "null_resource" "caddy_config_on_server" {
+resource "null_resource" "ensure_caddy_config_on_server" {
   triggers = {
     caddyfile_content = templatefile("${path.module}/templates/Caddyfile.tftpl", {
       caddy_services_to_proxy = var.caddy_services_to_proxy,
@@ -57,7 +57,7 @@ resource "docker_container" "caddy" {
     container_path = "/data"
   }
   volumes {
-    host_path      = local_file.caddyfile.filename
+    host_path      = null_resource.ensure_caddy_config_on_server.triggers.caddyfile_content
     container_path = "/etc/caddy/Caddyfile"
     read_only      = true
   }
@@ -67,11 +67,11 @@ resource "docker_container" "caddy" {
   }
 
   env = [
-    "CADDY_CONFIG_HASH=${sha256(null_resource.caddy_config_on_server.triggers.caddyfile_content)}"
+    "CADDY_CONFIG_HASH=${sha256(null_resource.ensure_caddy_config_on_server.triggers.caddyfile_content)}"
   ]
 
   depends_on = [
-    null_resource.caddy_config_on_server,
+    null_resource.ensure_caddy_config_on_server,
     docker_volume.caddy_data,
     docker_image.caddy
   ]

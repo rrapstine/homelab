@@ -2,7 +2,7 @@
 # by deploying them to the target server via SSH.
 
 locals {
-  local_generated_dir = "${path.module}/mdns/.generated/"
+  local_generated_dir = "${path.module}/.generated/"
 }
 
 # Ensure that the .generated directory exists locally
@@ -14,11 +14,11 @@ resource "null_resource" "ensure_local_generated_dir" {
 
 # Generate mDNS aliases configuration file
 resource "local_file" "mdns_aliases_config" {
-  content = templatefile("${path.module}/mdns/templates/mdns-aliases.conf.tftpl", {
+  content = templatefile("${path.module}/templates/mdns-aliases.conf.tftpl", {
     services        = var.system_services
     server_hostname = var.system_server_hostname
   })
-  filename = "${path.module}/mdns/.generated/mdns-aliases"
+  filename = "${path.module}/.generated/mdns-aliases"
 }
 
 # Copy the Python script to the server
@@ -35,7 +35,7 @@ resource "null_resource" "deploy_mdns_script" {
   }
 
   provisioner "file" {
-    source      = "${path.module}/mdns/scripts/publish-mdns-aliases.py"
+    source      = "${path.module}/scripts/publish-mdns-aliases.py"
     destination = "/tmp/publish-mdns-aliases.py"
   }
 
@@ -75,10 +75,10 @@ resource "null_resource" "deploy_mdns_aliases_config" {
 
 # Generate systemd service file from template
 resource "local_file" "mdns_service" {
-  content = templatefile("${path.module}/mdns/templates/mdns-publisher.service.tftpl", {
+  content = templatefile("${path.module}/templates/mdns-publisher.service.tftpl", {
     user = var.system_ssh_user
   })
-  filename = "${path.module}/mdns/.generated/mdns-publisher.service"
+  filename = "${path.module}/.generated/mdns-publisher.service"
 }
 
 # Deploy systemd service for mDNS publisher
