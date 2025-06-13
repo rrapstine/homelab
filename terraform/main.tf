@@ -27,14 +27,13 @@ module "caddy" {
 
   source = "./system/caddy"
 
-  caddy_host_http_port  = var.caddy_http_port
-  caddy_host_https_port = var.caddy_https_port
+  caddy_host_http_port  = var.caddy_host_http_port
+  caddy_host_https_port = var.caddy_host_https_port
 
   caddy_network_name      = docker_network.homelab_services_network.name
-  caddy_config_path_host  = var.caddy_config_host_path
+  caddy_config_host_path  = var.caddy_config_host_path
   caddy_services_to_proxy = local.caddy_target_services
   local_domain            = var.local_domain
-  # caddy_container_name and caddy_volume_name will use defaults from the Caddy module's variables.tf
 }
 
 # --- Service Modules (Future - Placeholder Examples) ---
