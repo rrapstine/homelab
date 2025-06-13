@@ -27,11 +27,15 @@ module "caddy" {
 
   source = "./system/caddy"
 
+  server_ip            = var.server_ip
+  ssh_user             = var.ssh_user
+  ssh_private_key_path = var.ssh_private_key_path
+
   caddy_host_http_port  = var.caddy_host_http_port
   caddy_host_https_port = var.caddy_host_https_port
 
   caddy_network_name      = docker_network.homelab_services_network.name
-  caddy_config_host_path  = var.caddy_config_host_path
+  caddy_config_path_host  = var.caddy_config_path_host
   caddy_services_to_proxy = local.caddy_target_services
   local_domain            = var.local_domain
 }

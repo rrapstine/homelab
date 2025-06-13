@@ -1,3 +1,18 @@
+variable "server_ip" {
+  description = "The IP address of the server where Caddy will run."
+  type        = string
+}
+
+variable "ssh_user" {
+  description = "The SSH username for connecting to the server."
+  type        = string
+}
+
+variable "ssh_private_key_path" {
+  description = "The path to the SSH private key for connecting to the server."
+  type        = string
+}
+
 variable "caddy_container_name" {
   description = "Name for the Caddy container."
   type        = string
@@ -27,7 +42,7 @@ variable "caddy_volume_name" {
   default     = "caddy_data"
 }
 
-variable "caddy_config_host_path" {
+variable "caddy_config_path_host" {
   description = "Full path on the host where the generated Caddyfile will be stored."
   type        = string
 }

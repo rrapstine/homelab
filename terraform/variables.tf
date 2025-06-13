@@ -46,7 +46,7 @@ variable "container_network_name" {
 }
 
 # Caddy configuration
-variable "caddy_config_host_path" {
+variable "caddy_config_path_host" {
   description = "Full path on the host where the generated Caddyfile will be stored."
   type        = string
 }

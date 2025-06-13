@@ -7,13 +7,35 @@ resource "docker_image" "caddy" {
   keep_locally = true
 }
 
-resource "local_file" "caddyfile" {
-  content = templatefile("${path.module}/templates/Caddyfile.tftpl", {
-    caddy_services_to_proxy = var.caddy_services_to_proxy,
-    local_domain            = var.local_domain,
-    timestamp               = timestamp()
-  })
-  filename = var.caddy_config_path_host
+resource "null_resource" "caddy_config_on_server" {
+  triggers = {
+    caddyfile_content = templatefile("${path.module}/templates/Caddyfile.tftpl", {
+      caddy_services_to_proxy = var.caddy_services_to_proxy,
+      local_domain            = var.local_domain,
+      timestamp               = timestamp()
+    })
+    config_destination_path = var.caddy_config_path_host
+    server_ip               = var.server_ip
+  }
+
+  connection {
+    type        = "ssh"
+    host        = var.server_ip
+    user        = var.ssh_user
+    private_key = file(var.ssh_private_key_path)
+    timeout     = "2m"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p '${dirname(var.caddy_config_path_host)}'",
+    ]
+  }
+
+  provisioner "file" {
+    content     = self.triggers.caddyfile_content
+    destination = var.caddy_config_path_host
+  }
 }
 
 resource "docker_container" "caddy" {
@@ -35,7 +57,7 @@ resource "docker_container" "caddy" {
     container_path = "/data"
   }
   volumes {
-    host_path      = local_file.caddyfile.filename # This is var.caddy_config_path_host
+    host_path      = local_file.caddyfile.filename
     container_path = "/etc/caddy/Caddyfile"
     read_only      = true
   }
@@ -44,5 +66,13 @@ resource "docker_container" "caddy" {
     name = var.caddy_network_name
   }
 
-  depends_on = [local_file.caddyfile, docker_volume.caddy_data]
+  env = [
+    "CADDY_CONFIG_HASH=${sha256(null_resource.caddy_config_on_server.triggers.caddyfile_content)}"
+  ]
+
+  depends_on = [
+    null_resource.caddy_config_on_server,
+    docker_volume.caddy_data,
+    docker_image.caddy
+  ]
 }
