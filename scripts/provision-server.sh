@@ -85,7 +85,7 @@ echo "📸 Creating baseline snapshot..."
 sudo snapper -c root create --description "Baseline - Fresh Ubuntu before homelab provisioning - $(date -u)" --userdata "important=yes"
 
 # Install essential packages
-echo "🛠️  Installing essential packages..."
+echo "🛠️ Installing essential packages..."
 sudo apt install -y curl wget git htop tree jq net-tools ca-certificates
 
 # Container runtime
@@ -93,7 +93,7 @@ echo "🐳 Installing Podman container runtime..."
 sudo apt install -y podman podman-compose buildah skopeo
 
 # Podman configuration
-echo "⚙️  Configuring Podman for user $SERVER_USER..."
+echo "⚙️ Configuring Podman for user $SERVER_USER..."
 sudo loginctl enable-linger $SERVER_USER
 systemctl --user enable podman.socket
 systemctl --user start podman.socket
@@ -103,6 +103,16 @@ if systemctl --user is-active --quiet podman.socket; then
 else
     echo "❌ Podman socket failed to start"
     exit 1
+fi
+
+# Allow rootless Podman to bind to privileged ports like 80/443
+echo "⚙️ Configuring net.ipv4.ip_unprivileged_port_start for Podman..."
+if ! grep -q "net.ipv4.ip_unprivileged_port_start=80" /etc/sysctl.d/90-podman-unprivileged-ports.conf 2>/dev/null; then
+  echo "net.ipv4.ip_unprivileged_port_start=80" | sudo tee /etc/sysctl.d/90-podman-unprivileged-ports.conf > /dev/null
+  sudo sysctl --system
+  echo "✅ Set net.ipv4.ip_unprivileged_port_start=80 and applied sysctl changes."
+else
+  echo "✅ net.ipv4.ip_unprivileged_port_start=80 already configured."
 fi
 
 # Network infrastructure

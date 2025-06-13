@@ -3,7 +3,7 @@ resource "docker_volume" "caddy_data" {
 }
 
 resource "docker_image" "caddy" {
-  name         = "caddy:2.7.6-alpine" # Caddy version is hardcoded here
+  name         = "caddy:2.10.0-alpine" # Caddy version is hardcoded here
   keep_locally = true
 }
 
