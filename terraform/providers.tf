@@ -10,9 +10,13 @@ terraform {
       source  = "hashicorp/local"
       version = "~> 2.0"
     }
-    podman = {
-      source  = "project0/podman"
-      version = "~> 0.0.1"
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0"
     }
   }
+}
+
+provider "docker" {
+  host = "ssh://${var.ssh_user}@${var.server_ip}"
 }

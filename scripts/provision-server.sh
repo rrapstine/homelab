@@ -85,7 +85,7 @@ echo "📸 Creating baseline snapshot..."
 sudo snapper -c root create --description "Baseline - Fresh Ubuntu before homelab provisioning - $(date -u)" --userdata "important=yes"
 
 # Install essential packages
-echo "🛠️  Installing essential packages..."
+echo "🛠️ Installing essential packages..."
 sudo apt install -y curl wget git htop tree jq net-tools ca-certificates
 
 # Container runtime
@@ -93,7 +93,7 @@ echo "🐳 Installing Podman container runtime..."
 sudo apt install -y podman podman-compose buildah skopeo
 
 # Podman configuration
-echo "⚙️  Configuring Podman for user $SERVER_USER..."
+echo "⚙️ Configuring Podman for user $SERVER_USER..."
 sudo loginctl enable-linger $SERVER_USER
 systemctl --user enable podman.socket
 systemctl --user start podman.socket
@@ -105,11 +105,66 @@ else
     exit 1
 fi
 
+# Allow rootless Podman to bind to privileged ports like 80/443
+echo "⚙️ Configuring net.ipv4.ip_unprivileged_port_start for Podman..."
+if ! grep -q "net.ipv4.ip_unprivileged_port_start=80" /etc/sysctl.d/90-podman-unprivileged-ports.conf 2>/dev/null; then
+  echo "net.ipv4.ip_unprivileged_port_start=80" | sudo tee /etc/sysctl.d/90-podman-unprivileged-ports.conf > /dev/null
+  sudo sysctl --system
+  echo "✅ Set net.ipv4.ip_unprivileged_port_start=80 and applied sysctl changes."
+else
+  echo "✅ net.ipv4.ip_unprivileged_port_start=80 already configured."
+fi
+
 # Network infrastructure
 echo "🌐 Installing mDNS support..."
 sudo apt install -y avahi-daemon avahi-utils
+
+# --- Determine Main Network Interface ---
+echo "🔎 Determining main network interface..."
+# Get the default network interface (usually the one for the default route)
+MAIN_INTERFACE=$(ip route | grep '^default' | awk '{print $5}' | head -n1)
+
+if [ -z "$MAIN_INTERFACE" ]; then
+    echo "❌ Could not determine the default network interface. Aborting Avahi interface configuration."
+    # Decide if you want to exit or just skip this specific Avahi config
+    # For now, let's just print a warning and continue, Avahi might still work okay without it
+    # if the firewall is the main issue. Or, you could 'exit 1'
+    echo "⚠️  Avahi will use its default interface detection."
+    # Set MAIN_INTERFACE to empty so the sed logic below doesn't try to use it if not found
+    MAIN_INTERFACE=""
+else
+    echo "💡 Default network interface detected as: $MAIN_INTERFACE"
+
+    # --- Configure Avahi to only use the main network interface ---
+    AVAHI_CONF_FILE="/etc/avahi/avahi-daemon.conf"
+    EXPECTED_AVAHI_LINE="allow-interfaces=$MAIN_INTERFACE"
+    COMMENTED_AVAHI_LINE="#allow-interfaces="
+
+    echo "⚙️  Configuring Avahi to use only interface '$MAIN_INTERFACE'..."
+
+    # Check if the line exists and is correctly configured
+    if grep -q "^$EXPECTED_AVAHI_LINE$" "$AVAHI_CONF_FILE"; then
+        echo "✅ Avahi allow-interfaces already correctly configured for $MAIN_INTERFACE."
+    # Check if the line is commented out and update it
+    elif grep -q "^$COMMENTED_AVAHI_LINE" "$AVAHI_CONF_FILE"; then
+        sudo sed -i "s|^$COMMENTED_AVAHI_LINE.*|$EXPECTED_AVAHI_LINE|" "$AVAHI_CONF_FILE"
+        echo "✅ Avahi allow-interfaces uncommented and set to $MAIN_INTERFACE."
+    # Check if the line exists but with a different interface (or no specific interface) and update it
+    elif grep -q "^allow-interfaces=" "$AVAHI_CONF_FILE"; then
+        sudo sed -i "s|^allow-interfaces=.*|$EXPECTED_AVAHI_LINE|" "$AVAHI_CONF_FILE"
+        echo "✅ Avahi allow-interfaces updated to $MAIN_INTERFACE."
+    # If the line doesn't exist at all, add it
+    else
+        echo "$EXPECTED_AVAHI_LINE" | sudo tee -a "$AVAHI_CONF_FILE" > /dev/null
+        echo "✅ Avahi allow-interfaces added for $MAIN_INTERFACE."
+    fi
+fi # End of MAIN_INTERFACE check for Avahi config
+
+# --- Enable and Restart Avahi ---
 sudo systemctl enable avahi-daemon
-sudo systemctl start avahi-daemon
+# Restart Avahi to ensure it picks up any configuration changes
+sudo systemctl restart avahi-daemon # Use restart to ensure it applies new config
+echo "✅ Avahi daemon enabled and (re)started."
 
 # Install python3, venv, build dependencies, and mdns-publisher package
 echo "🐍 Installing Python3, venv, build dependencies, and setting up mdns-publisher in a virtual environment..."
@@ -132,10 +187,23 @@ sudo "$PYTHON_VENV_PATH/bin/pip" install --upgrade mdns-publisher
 
 # Basic firewall
 echo "🔥 Configuring basic firewall..."
-sudo ufw --force enable
+
+# Default policies
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
+
+# Allow essential services
 sudo ufw allow ssh
+sudo ufw allow 5353/udp  # For mDNS / Avahi for legends.local resolution
+
+# Allow Caddy ports
+sudo ufw allow 80/tcp   # For Caddy HTTP
+sudo ufw allow 443/tcp  # For Caddy HTTPS
+
+# Enable the firewall (if not already enabled)
+# The --force flag will enable without prompting if it's currently disabled.
+# If it's already enabled, this command doesn't hurt.
+sudo ufw --force enable
 
 # Set hostname
 if [ "$(hostname)" != "legends" ]; then
